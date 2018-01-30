@@ -1,5 +1,4 @@
 import React, {Component} from 'react';
-import logo from './logo.svg';
 import './App.css';
 
 class App extends React.Component {
@@ -7,8 +6,12 @@ class App extends React.Component {
         super();
         this.state = {
             seriesList: [],
-            seriesEpisodesList: []
+            seriesEpisodesList: [],
+            value: '',
+            output: '',
+            matchingSerie: ''
         };
+        this.onChange = this.onChange.bind(this)
     }
 
     componentDidMount() {
@@ -17,26 +20,77 @@ class App extends React.Component {
             .then(response => response.json())
             .then(seriesListDepuisFichier => {
                 this.setState({seriesList: seriesListDepuisFichier});
+                fetch('seriesEpisodesList.json',{})
+                    .then(response => response.json())
+                    .then(seriesEpisodesListDepuisFichier => {
+                        this.setState({seriesEpisodesList: seriesEpisodesListDepuisFichier});
+                    })
 
             })
             .catch(function (error) {
                 console.log(error);
             })
             .then(function () {
-                alert("j'ai fait ce que j'ai pu");
+                /*alert("j'ai fait ce que j'ai pu");*/
             });
 
+    }
+
+    onChange(event) {
+        this.setState({
+            value: event.target.value
+        });
+        let seriesTitleSearchValue = this.state.value
+            .toLowerCase() // transforme en minuscule
+            .trim(); // enleve les blancs au debut et fin de chaine
+
+            /*
+                si le champ recupéré est vide ben ca sert a rien de faire
+             */
+        if (seriesTitleSearchValue !== "") {
+
+            console.log(seriesTitleSearchValue);
+
+            let matchingSeries = this.state.seriesList.filter(
+                a => a.seriesName.toLowerCase().trim().indexOf(seriesTitleSearchValue) > -1);
+            // boucle sur le tableau des series qui correspondent
+            for (this.state.matchingSerie of matchingSeries) {
+                this.setState({output: this.state.matchingSerie.seriesName});
+            }
+            let matchingSerieEpisodesLists = this.state.seriesEpisodesList.filter(
+                b => b.serie_id === this.state.matchingSerie.id
+            );
+
+            /*
+                on sait que dans tous les cas un tableau est retourné
+                mais on ne souhaite que la premiere liste de listes
+            */
+            if (matchingSerieEpisodesLists.length) {
+                let matchingSerieEpisodesList = matchingSerieEpisodesLists[0];
+
+                // boucle sur le tableau des listes d'episode qui correspondent
+                for (let episode of matchingSerieEpisodesList.episodes_list) {
+                    this.setState({output: episode.episodeName});
+                }
+            }
+        }
     }
 
     render() {
         return (
             <div>
-                <ul>
-                    {this.state.seriesList.length ?
-                        this.state.seriesList.map(item => <li key={item.id}>{item.seriesName}</li>)
-                        : <li>Loading...</li>
+                <form>
+                    <label>
+                        <h1>Entrez le nom d'une série :</h1>
+                        <input
+                            type="text" value={this.state.value} onChange={this.onChange}/>
+                    </label>
+                    {this.state.value !== "" ?
+                        <li>{this.state.output}</li>
+                                            :
+                        <li>Chargement...</li>
                     }
-                </ul>
+                </form>
             </div>
         )
     }
