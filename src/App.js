@@ -7,12 +7,9 @@ class App extends React.Component {
         this.state = {
             seriesList: [],
             seriesEpisodesList: [],
-            value: '',
             output: [],
             outputSeries: '',
-            matchingSerie: '',
         };
-        this.onChange = this.onChange.bind(this)
     }
 
     componentDidMount() {
@@ -35,43 +32,32 @@ class App extends React.Component {
             });
     }
 
-    onChange(event) {
-        //on met la valeur du champ dans la variable value
-        this.setState({
-            value: event.target.value
-        });
-        let seriesTitleSearchValue = this.state.value
-            .toLowerCase() // transforme en minuscule
-            .trim(); // enleve les blancs au debut et fin de chaine
-            /*
-                si le champ recupéré est vide ben ca sert a rien de faire
-             */
-        if (seriesTitleSearchValue !== "") {
-            let matchingSeries = this.state.seriesList.filter(
-                (a) => (a.seriesName.toLowerCase().trim().indexOf(seriesTitleSearchValue) > -1)
-            );
+    onKeyUp = (event) => {
+        let seriesTitleSearchValue = event.target.value.toLowerCase().trim();
+        let matchingSeries = [];
+
+            /*  si le champ recupéré est vide ben ca sert a rien de faire  */
+            if (seriesTitleSearchValue.length !== 0) {
+                 matchingSeries = this.state.seriesList.filter(
+                    a => a.seriesName.toLowerCase().trim().indexOf(seriesTitleSearchValue) > -1
+                    );
+                }
+
+            let output = [];
             // boucle sur le tableau des series qui correspondent
-            for (this.state.matchingSerie of matchingSeries) {
-                this.setState({outputSeries: this.state.matchingSerie.seriesName});
-
-
+            for (let matchingSerie of matchingSeries) {
                 let matchingSerieEpisodesLists = this.state.seriesEpisodesList.filter(
-                    b => b.serie_id === this.state.matchingSerie.id
+                    b => b.serie_id === matchingSerie.id
                 );
-                /*
-                    on sait que dans tous les cas un tableau est retourné
-                    mais on ne souhaite que la premiere liste de listes
-                */
-                if (matchingSerieEpisodesLists.length) {
-                    let matchingSerieEpisodesList = matchingSerieEpisodesLists[0];
-                    // boucle sur le tableau des listes d'episode qui correspondent
-                    for (let episode of matchingSerieEpisodesList.episodes_list) {
-                        this.state.output += episode.episodeName;
-                    }
-            }
-            }
+                    //on cree un tableau avec deux clés dans lequel on met les valeurs correspondantes
+                    //on veut que la première liste
+                    output.push({
+                        'title': matchingSerie.seriesName,
+                        'episodes': matchingSerieEpisodesLists[0].episodes_list
+                    });
+                    this.setState({ output: output})
+                }
         }
-    }
 
     render() {
         return (
@@ -80,16 +66,22 @@ class App extends React.Component {
                     <label>
                         <h1>Entrez le nom d'une série :</h1>
                         <input
-                            type="text" value={this.state.value} onChange={this.onChange}/>
+                            type="text" onKeyUp={this.onKeyUp}/>
                     </label>
-                    {this.state.value !== "" ?
-                    <h2>Nom de la série : {this.state.outputSeries}</h2>
-                        : <h2>Chargement...</h2>
-                    }
-                    <h3>Episodes : </h3>
-                    {this.state.value !== "" ?
-                        <li>{this.state.output}</li>
-                                            :
+                    {this.state.output.length ?
+                        this.state.output.map((serie) => (
+                            <li key={serie.title}>
+                                {serie.title}
+                                <ul>
+                                    {serie.episodes.map((episode) =>
+                                        <li key={episode.episodeName}>
+                                            {episode.episodeName}
+                                        </li>
+                                    )}
+                                </ul>
+                            </li>
+                        ))
+                        :
                         <li>Chargement...</li>
                     }
                 </form>
